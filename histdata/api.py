@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import requests
 from bs4 import BeautifulSoup
@@ -80,6 +80,26 @@ def download_hist_data(year='2016',
     :return: ZIP Filename.
     """
 
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
+    force_download = False    
+    if month is None:
+        output_filename = 'DAT_{}_{}_{}_{}.zip'.format(platform, pair.upper(), time_frame, str(year))
+    else:
+        output_filename = 'DAT_{}_{}_{}_{}.zip'.format(platform, pair.upper(), time_frame,
+                                                       '{}{}'.format(year, str(month).zfill(2)))
+        dt = datetime(int(year), int(month), 1) + timedelta(days=60)
+        now = datetime.now()
+        force_download = dt > now
+
+    output_filename = os.path.join(output_directory, output_filename)
+    if os.path.isfile(output_filename):
+        if force_download:
+            print(f"- {output_filename} again.")
+        else:
+            return output_filename
+
     tick_data = time_frame.startswith('T')
     if (not tick_data) and ((int(year) >= datetime.now().year and month is None) or
                             (int(year) <= datetime.now().year - 1 and month is not None)):
@@ -120,21 +140,15 @@ def download_hist_data(year='2016',
             'platform': platform,
             'timeframe': time_frame,
             'fxpair': pair.upper()}
+    if verbose:
+        print(data)
+
     r = requests.post(url='https://www.histdata.com/get.php',
                       data=data,
                       headers=headers)
 
     assert len(r.content) > 0, 'No data could be found here.'
-    if verbose:
-        print(data)
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-    if month is None:
-        output_filename = 'DAT_{}_{}_{}_{}.zip'.format(platform, pair.upper(), time_frame, str(year))
-    else:
-        output_filename = 'DAT_{}_{}_{}_{}.zip'.format(platform, pair.upper(), time_frame,
-                                                       '{}{}'.format(year, str(month).zfill(2)))
-    output_filename = os.path.join(output_directory, output_filename)
+
     with open(output_filename, 'wb') as f:
         for chunk in r.iter_content(chunk_size=1024):
             if chunk:

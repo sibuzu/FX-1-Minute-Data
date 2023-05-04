@@ -3,6 +3,7 @@ import os
 
 from histdata.api import download_hist_data
 
+OUTPUT_PATH = "D:/期貨歷史資料/FOREX/1m"
 
 def mkdir_p(path):
     import errno
@@ -23,7 +24,7 @@ def download_all():
             currency_pair_name, pair, history_first_trading_month = row
             year = int(history_first_trading_month[0:4])
             print(currency_pair_name)
-            output_folder = os.path.join('output', pair)
+            output_folder = os.path.join(OUTPUT_PATH, pair)
             mkdir_p(output_folder)
             try:
                 while True:
